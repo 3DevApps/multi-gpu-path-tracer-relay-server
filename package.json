@@ -1,0 +1,17 @@
+{
+  "name": "raytracer-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "uuid": "^10.0.0",
+    "ws": "^8.17.0"
+  }
+}
