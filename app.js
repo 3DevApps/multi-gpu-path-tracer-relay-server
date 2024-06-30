@@ -1,6 +1,6 @@
-import { WebSocketServer } from "ws";
-import { v4 as uuidv4 } from "uuid";
-import ClientsPerJobs from "./ClientsPerJob.js";
+const WebSocketServer = require("ws").WebSocketServer;
+const uuidv4 = require("uuid").v4;
+const ClientsPerJobs = require("./ClientsPerJob.js");
 
 const PORT = 22636;
 
