@@ -2,7 +2,7 @@ import { WebSocketServer } from "ws";
 import { v4 as uuidv4 } from "uuid";
 import ClientsPerJobs from "./ClientsPerJob.js";
 
-const PORT = 8080;
+const PORT = 22636;
 
 const wss = new WebSocketServer({ port: PORT });
 const clients = new ClientsPerJobs();
