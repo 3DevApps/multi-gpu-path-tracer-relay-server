@@ -1,4 +1,4 @@
-export default class ClientsPerJobs {
+class ClientsPerJobs {
   constructor() {
     this.clients = {}; // job <-> clients
   }
@@ -33,3 +33,5 @@ export default class ClientsPerJobs {
     }
   }
 }
+
+module.exports = ClientsPerJobs;
