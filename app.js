@@ -1,11 +1,15 @@
 const WebSocketServer = require("ws").WebSocketServer;
 const uuidv4 = require("uuid").v4;
 const ClientsPerJobs = require("./ClientsPerJob.js");
+const SSHClient = require("./sshClient.js");
+const path = require("path");
+const fs = require("fs");
 
 const PORT = 22636;
 
 const wss = new WebSocketServer({ port: PORT });
 const clients = new ClientsPerJobs();
+const sshClient = new SSHClient();
 let LL_JOB;
 
 wss.on("connection", (ws) => {
@@ -13,24 +17,14 @@ wss.on("connection", (ws) => {
     // 1. Parse message
     let message;
     try {
-      console.log(rawMessage);
-      message = JSON.parse(rawMessage);
+      message = rawMessage.toString().split("#");
     } catch (error) {
       console.error("Error parsing message", error, rawMessage);
       return;
     }
 
-    console.log("Message received", message);
-
-    switch (message?.type) {
-      case "INIT_LL":
-        LL_JOB = ws;
-        ws.send(
-          JSON.stringify({
-            type: "INIT_OK",
-          })
-        );
-        break;
+    let type = message[0];
+    switch (type) {
       case "INIT_JOB":
         var id = uuidv4();
         clients.addClient(id, ws);
@@ -40,18 +34,10 @@ wss.on("connection", (ws) => {
             id,
           })
         );
-
-        // Inform LL_JOB about the new job
-        LL_JOB?.send(
-          JSON.stringify({
-            type: "INIT_JOB",
-            id,
-          })
-        );
         break;
       case "INIT_CLIENT":
         // We have an id
-        var id = message.id;
+        var id = message[1];
         clients.addClient(id, ws);
         ws.send(
           JSON.stringify({
@@ -59,29 +45,38 @@ wss.on("connection", (ws) => {
             id,
           })
         );
-
-        // Inform LL_JOB about the new job
-        LL_JOB?.send(
-          JSON.stringify({
-            type: "INIT_JOB",
-            id,
-          })
-        );
         break;
+      case "DISPATCH_JOB":
+        const id = message[1];
+        sshClient.dispatchJob({
+          jobId: id});
+          
+      break;
       case "JOB_MESSAGE":
         // Send the message to all clients
-        clients.getClients(message.id).forEach((client) => {
+        const clientId = message[1];
+        const clientMsg = message[2];
+        clients.getClients(clientId).forEach((client) => {
           client.send(
             JSON.stringify({
               type: "JOB_MESSAGE",
-              message: message.message,
+              message: clientMsg,
             })
           );
         });
         break;
+        case "FILE":
+          console.log(message[3])
+          const filePath = path.join(__dirname, "uploads", message[2]);
+          const buffer = Buffer.from(message[3].split(","), "base64");
+          fs.writeFile(filePath, buffer, (err) => {
+            if (err) {
+              console.error("Error saving file:", err);
+            }
+            // TODO: add confirmation.
+          });
+          break;
       default:
-        // Pass the message to the LL job
-        LL_JOB?.send(rawMessage);
         break;
     }
   });
