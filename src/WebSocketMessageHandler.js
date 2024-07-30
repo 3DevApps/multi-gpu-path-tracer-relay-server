@@ -1,9 +1,9 @@
 const Buffer = require("buffer").Buffer;
 
 class WebSocketMessageHandler {
-  constructor(clients, sshClient) {
+  constructor(clients, jobManager) {
     this.clients = clients;
-    this.sshClient = sshClient;
+    this.jobManager = jobManager;
   }
 
   parseMessage(rawMessage) {
@@ -20,7 +20,7 @@ class WebSocketMessageHandler {
   }
 
   handleMessage(ws, rawMessage) {
-    const message = parseMessage(rawMessage);
+    const message = this.parseMessage(rawMessage);
     if (!message) {
       return;
     }
@@ -32,7 +32,7 @@ class WebSocketMessageHandler {
           console.error("Client is not associated with a job");
           return;
         }
-        sshClient.dispatchJob({
+        jobManager.dispatchJob({
           jobId,
         });
         break;
@@ -41,7 +41,7 @@ class WebSocketMessageHandler {
           console.error("Client is not associated with a job");
           return;
         }
-        sshClient.killJob({
+        jobManager.killJob({
           jobId,
         });
         break;
@@ -53,17 +53,17 @@ class WebSocketMessageHandler {
         });
         break;
       case "UPLOAD_FILE":
-        const filePath = path.join(__dirname, "uploads", message[2]);
-        const buffer = Buffer.from(message[3].split(","), "base64");
+        const filePath = path.join(__dirname, "tmp", message[1]);
+        const buffer = Buffer.from(message[2].split(","), "base64");
         fs.writeFile(filePath, buffer, (err) => {
           if (err) {
             console.error("Error saving file:", err);
             return;
           }
 
-          sshClient.sendFile({
+          jobManager.sendFile({
             filePath,
-            fileName: message[2],
+            fileName: message[1],
           });
 
           fs.unlink(filePath, (err) => {
