@@ -10,6 +10,7 @@ class WebSocketConnectionStateHandler {
     const parsedUrl = new URL(req.url, "http://com.example");
 
     if (parsedUrl.searchParams.has("jobId")) {
+      ws._jobId = jobId;
       if (parsedUrl.searchParams.has("path-tracing-job")) {
         this.clients.addPathTracingClient(
           parsedUrl.searchParams.get("jobId"),
@@ -25,7 +26,6 @@ class WebSocketConnectionStateHandler {
     const jobId = uuidv4();
     this.clients.addClientToJob(jobId, ws);
     ws.send("JOB_ID#" + jobId);
-    ws._jobId = jobId;
   }
 
   handleConnectionClose(ws) {
