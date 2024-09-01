@@ -48,7 +48,7 @@ class WebSocketMessageHandler {
       case "JOB_MESSAGE":
         const jobIdFromMessage = message[1];
         const messageToPass = this.encodeMessage(message.slice(2));
-        this.clients.getClients(ws._jobId).forEach((client) => {
+        this.clients.getClients(ws._jobId)?.forEach((client) => {
           client.send(messageToPass);
         });
         break;
