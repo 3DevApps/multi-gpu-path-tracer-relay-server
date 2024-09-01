@@ -25,8 +25,24 @@ class WebSocketMessageHandler {
       return;
     }
     const type = message[0];
-    const jobId = this.clients.getClientJobId(ws);
+    const jobId = ws._jobId;
     switch (type) {
+      case "JOB_MESSAGE":
+        this.clients.getClients(jobId)?.forEach((client) => {
+          if (message[1] === "RENDER") {
+            client.send(rawMessage.slice(19));
+          } else {
+            client.send(this.encodeMessage(message.slice(1)));
+          }
+        });
+        break;
+      case "CLIENT_MESSAGE":
+        this.clients
+          .getPathTracingClients(jobId)
+          ?.forEach((client) =>
+            client.send(this.encodeMessage(message.slice(1)))
+          );
+        break;
       case "DISPATCH_JOB":
         if (!jobId) {
           console.error("Client is not associated with a job");
@@ -43,13 +59,6 @@ class WebSocketMessageHandler {
         }
         jobManager.killJob({
           jobId,
-        });
-        break;
-      case "JOB_MESSAGE":
-        const jobIdFromMessage = message[1];
-        const messageToPass = this.encodeMessage(message.slice(2));
-        this.clients.getClients(jobIdFromMessage).forEach((client) => {
-          client.send(messageToPass);
         });
         break;
       case "UPLOAD_FILE":
