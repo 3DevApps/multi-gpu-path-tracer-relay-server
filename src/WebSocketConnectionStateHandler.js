@@ -25,6 +25,7 @@ class WebSocketConnectionStateHandler {
     const jobId = uuidv4();
     this.clients.addClientToJob(jobId, ws);
     ws.send("JOB_ID#" + jobId);
+    ws._jobId = jobId;
   }
 
   handleConnectionClose(ws) {
