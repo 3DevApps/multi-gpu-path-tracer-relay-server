@@ -10,6 +10,10 @@ class WebSocketClientHandler {
     return this.clients[jobId] || null;
   }
 
+  getPathTracingClients(jobId) {
+    return this.pathTracingClients[jobId] || null;
+  }
+
   getClientJobId(client) {
     return this.clientJobMap.get(client) || null;
   }

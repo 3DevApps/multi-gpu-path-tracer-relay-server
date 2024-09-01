@@ -25,7 +25,7 @@ class WebSocketMessageHandler {
       return;
     }
     const type = message[0];
-    const jobId = this.clients.getClientJobId(ws);
+    const jobId = ws._jobId;
     switch (type) {
       case "DISPATCH_JOB":
         if (!jobId) {
@@ -46,11 +46,14 @@ class WebSocketMessageHandler {
         });
         break;
       case "JOB_MESSAGE":
-        const jobIdFromMessage = message[1];
-        const messageToPass = this.encodeMessage(message.slice(2));
-        this.clients.getClients(ws._jobId)?.forEach((client) => {
-          client.send(messageToPass);
+        this.clients.getClients(jobId)?.forEach((client) => {
+          client.send(this.encodeMessage(message.slice(1)));
         });
+        break;
+      case "CLIENT_MESSAGE":
+        this.clients
+          .getPathTracingClients(jobId)
+          ?.forEach((client) => client.send(this.encodeMessage(message.slice(1))));  
         break;
       case "UPLOAD_FILE":
         const filePath = path.join(__dirname, "tmp", message[1]);
