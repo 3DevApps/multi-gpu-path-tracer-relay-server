@@ -1,6 +1,6 @@
 const uuidv4 = require("uuid").v4;
 
-const DEBUG_JOB_ID = "10";
+const DEBUG_JOB_ID = "0";
 
 class WebSocketConnectionStateHandler {
   constructor(clients, jobManager) {
