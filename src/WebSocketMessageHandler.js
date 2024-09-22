@@ -1,3 +1,4 @@
+const WebSocketMessageUtils = require("./WebSocketMessageUtils");
 const Buffer = require("buffer").Buffer;
 
 class WebSocketMessageHandler {
@@ -6,21 +7,8 @@ class WebSocketMessageHandler {
     this.jobManager = jobManager;
   }
 
-  parseMessage(rawMessage) {
-    try {
-      return rawMessage.toString().split("#");
-    } catch (error) {
-      console.error("Error parsing message", error, rawMessage);
-      return null;
-    }
-  }
-
-  encodeMessage(message) {
-    return message.join("#");
-  }
-
   handleMessage(ws, rawMessage) {
-    const message = this.parseMessage(rawMessage);
+    const message = WebSocketMessageUtils.parseMessage(rawMessage);
     if (!message) {
       return;
     }
@@ -32,7 +20,7 @@ class WebSocketMessageHandler {
           if (message[1] === "RENDER") {
             client.send(rawMessage.slice(19));
           } else {
-            client.send(this.encodeMessage(message.slice(1)));
+            client.send(WebSocketMessageUtils.encodeMessage(message.slice(1)));
           }
         });
         break;
@@ -43,7 +31,7 @@ class WebSocketMessageHandler {
         this.clients
           .getPathTracingClients(jobId)
           ?.forEach((client) =>
-            client.send(this.encodeMessage(message.slice(1)))
+            client.send(WebSocketMessageUtils.encodeMessage(message.slice(1)))
           );
         break;
       case "UPLOAD_FILE":

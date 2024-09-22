@@ -35,6 +35,10 @@ class WebSocketClientHandler {
     return client === this.clients[jobId][0];
   }
 
+  getAdminClient(jobId) {
+    return this.clients[jobId] ? this.clients[jobId][0] : null;
+  }
+
   addPathTracingClient(jobId, client) {
     if (!this.pathTracingClients[jobId]) {
       this.pathTracingClients[jobId] = [];

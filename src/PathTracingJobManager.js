@@ -1,4 +1,5 @@
 const { NodeSSH } = require("node-ssh");
+const WebSocketMessageUtils = require("./WebSocketMessageUtils");
 
 const JOB_DISCONNECT_TIMEOUT = 20000;
 
@@ -27,7 +28,7 @@ class PathTracingJobManager {
     }
   }
 
-  async dispatchJob(jobId) {
+  async dispatchJob(client, jobId) {
     if (this.jobDisconnectTimeouts[jobId]) {
       clearTimeout(this.jobDisconnectTimeouts[jobId]);
       delete this.jobDisconnectTimeouts[jobId];
@@ -38,6 +39,14 @@ class PathTracingJobManager {
     );
     const sbatchId = result.stdout.split(" ")[3];
     this.jobs.set(jobId, sbatchId);
+    client.send(
+      WebSocketMessageUtils.encodeMessage([
+        "NOTIFICATION",
+        "LOADING",
+        "JOB_INIT",
+        "Initiating job...",
+      ])
+    );
   }
 
   async killJob(jobId) {
