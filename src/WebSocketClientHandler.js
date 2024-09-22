@@ -28,6 +28,13 @@ class WebSocketClientHandler {
     }
   }
 
+  isAdmin(jobId, client) {
+    if (!this.clients[jobId] || this.clients[jobId].length === 0) {
+      return false;
+    }
+    return client === this.clients[jobId][0];
+  }
+
   addPathTracingClient(jobId, client) {
     if (!this.pathTracingClients[jobId]) {
       this.pathTracingClients[jobId] = [];

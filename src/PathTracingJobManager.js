@@ -24,17 +24,19 @@ class PathTracingJobManager {
     }
   }
 
-  // `sbatch ~/multi-gpu-path-tracer/scripts/run-job.sh ${jobId} ~/multi-gpu-path-tracer/models/cubes.obj`
   async dispatchJob(jobId) {
     const result = await this.ssh.execCommand(
-      `sbatch ~/multi-gpu-path-tracer/scripts/run-job.sh ${jobId}`
+      `sbatch ~/multi-gpu-path-tracer/scripts/run_job.sh ${jobId}`
     );
     const sbatchId = result.stdout.split(" ")[3];
     this.jobs.set(jobId, sbatchId);
   }
 
   async killJob(jobId) {
-    this.ssh.execCommand(`scancel ${jobId}`);
+    if (!this.jobs.has(jobId)) {
+      return;
+    }
+    this.ssh.execCommand(`scancel ${this.jobs.get(jobId)}`);
     this.jobs.delete(jobId);
   }
 
@@ -42,7 +44,7 @@ class PathTracingJobManager {
     await this.ssh.putFiles([
       {
         local: filePath,
-        remote: `files/${fileName}`,
+        remote: `files/f${fileName}`,
       },
     ]);
   }

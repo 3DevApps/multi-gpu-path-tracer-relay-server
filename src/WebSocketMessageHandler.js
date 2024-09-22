@@ -37,31 +37,19 @@ class WebSocketMessageHandler {
         });
         break;
       case "CLIENT_MESSAGE":
+        if (!this.clients.isAdmin(jobId, ws)) {
+          return;
+        }
         this.clients
           .getPathTracingClients(jobId)
           ?.forEach((client) =>
             client.send(this.encodeMessage(message.slice(1)))
           );
         break;
-      case "DISPATCH_JOB":
-        if (!jobId) {
-          console.error("Client is not associated with a job");
-          return;
-        }
-        jobManager.dispatchJob({
-          jobId,
-        });
-        break;
-      case "KILL_JOB":
-        if (!jobId) {
-          console.error("Client is not associated with a job");
-          return;
-        }
-        jobManager.killJob({
-          jobId,
-        });
-        break;
       case "UPLOAD_FILE":
+        if (!this.clients.isAdmin(jobId, ws)) {
+          return;
+        }
         const filePath = path.join(__dirname, "tmp", message[1]);
         const buffer = Buffer.from(message[2].split(","), "base64");
         fs.writeFile(filePath, buffer, (err) => {
