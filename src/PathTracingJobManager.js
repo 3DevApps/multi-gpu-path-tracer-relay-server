@@ -60,6 +60,16 @@ class PathTracingJobManager {
     }, JOB_DISCONNECT_TIMEOUT);
   }
 
+  async getJobStatus(jobId) {
+    if (!this.jobs.has(jobId)) {
+      return "NOT_FOUND";
+    }
+    const result = await this.ssh.execCommand(
+      `hpc-jobs | grep ${this.jobs.get(jobId)} | awk '{ print $4 }'`
+    );
+    return result.stdout.trim();
+  }
+
   async sendFile(filePath, fileName) {
     await this.ssh.putFiles([
       {
