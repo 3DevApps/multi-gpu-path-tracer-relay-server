@@ -33,7 +33,7 @@ class WebSocketConnectionStateHandler {
     ws.send(WebSocketMessageUtils.encodeMessage(["JOB_ID", jobId]));
     ws.send(WebSocketMessageUtils.encodeMessage(["IS_ADMIN", isFirstClient]));
 
-    if (isFirstClient || jobId === DEBUG_JOB_ID) {
+    if (isFirstClient || jobId !== DEBUG_JOB_ID) {
       this.jobManager.dispatchJob(ws, jobId);
     }
   }
