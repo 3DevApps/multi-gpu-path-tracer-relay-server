@@ -17,8 +17,8 @@ class WebSocketMessageHandler {
     switch (type) {
       case "JOB_MESSAGE":
         this.clients.getClients(jobId)?.forEach((client) => {
-          if (message[1] === "RENDER") {
-            client.send(rawMessage.slice(19));
+          if (message[1] === "RENDER" || message[1] === "SNAPSHOT") {
+            client.send(rawMessage.slice(12));
           } else {
             client.send(WebSocketMessageUtils.encodeMessage(message.slice(1)));
           }
@@ -33,6 +33,10 @@ class WebSocketMessageHandler {
           ?.forEach((client) =>
             client.send(WebSocketMessageUtils.encodeMessage(message.slice(1)))
           );
+        break;
+      case "JOB_STATUS":
+        const jobStatus = this.jobManager.getJobStatus(jobId);
+        ws.send(WebSocketMessageUtils.encodeMessage(["JOB_STATUS", jobStatus]));
         break;
       case "UPLOAD_FILE":
         if (!this.clients.isAdmin(jobId, ws)) {
