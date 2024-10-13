@@ -1,6 +1,6 @@
 const { NodeSSH } = require("node-ssh");
 
-const JOB_DISCONNECT_TIMEOUT = 60000;
+const JOB_DISCONNECT_TIMEOUT = 20000;
 
 class PathTracingJobManager {
   constructor() {
