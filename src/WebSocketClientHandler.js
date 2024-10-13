@@ -7,7 +7,11 @@ class WebSocketClientHandler {
   }
 
   getClients(jobId) {
-    return this.clients[jobId];
+    return this.clients[jobId] || null;
+  }
+
+  getPathTracingClients(jobId) {
+    return this.pathTracingClients[jobId] || null;
   }
 
   getClientJobId(client) {
