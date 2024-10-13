@@ -1,9 +1,12 @@
 const { NodeSSH } = require("node-ssh");
 
+const JOB_DISCONNECT_TIMEOUT = 60000;
+
 class PathTracingJobManager {
   constructor() {
     this.ssh = new NodeSSH();
     this.jobs = new Map();
+    this.jobDisconnectTimeouts = {};
 
     this.connect({
       host: process.env.SSH_HOST,
@@ -25,6 +28,11 @@ class PathTracingJobManager {
   }
 
   async dispatchJob(jobId) {
+    if (this.jobDisconnectTimeouts[jobId]) {
+      clearTimeout(this.jobDisconnectTimeouts[jobId]);
+      delete this.jobDisconnectTimeouts[jobId];
+      return;
+    }
     const result = await this.ssh.execCommand(
       `sbatch ~/multi-gpu-path-tracer/scripts/run_job.sh ${jobId}`
     );
@@ -33,11 +41,14 @@ class PathTracingJobManager {
   }
 
   async killJob(jobId) {
-    if (!this.jobs.has(jobId)) {
+    if (!this.jobs.has(jobId) || this.jobDisconnectTimeouts[jobId]) {
       return;
     }
-    this.ssh.execCommand(`scancel ${this.jobs.get(jobId)}`);
-    this.jobs.delete(jobId);
+    this.jobDisconnectTimeouts[jobId] = setTimeout(() => {
+      this.ssh.execCommand(`scancel ${this.jobs.get(jobId)}`);
+      this.jobs.delete(jobId);
+      delete this.jobDisconnectTimeouts[jobId];
+    }, JOB_DISCONNECT_TIMEOUT);
   }
 
   async sendFile(filePath, fileName) {
