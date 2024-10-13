@@ -1,9 +1,9 @@
 const uuidv4 = require("uuid").v4;
 
 class WebSocketConnectionStateHandler {
-  constructor(clients, sshClient) {
+  constructor(clients, jobManager) {
     this.clients = clients;
-    this.sshClient = sshClient;
+    this.jobManager = jobManager;
   }
 
   handleNewConnection(ws, req) {
