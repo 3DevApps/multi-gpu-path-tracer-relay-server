@@ -2,8 +2,6 @@ const WebSocketMessageUtils = require("./WebSocketMessageUtils");
 
 const uuidv4 = require("uuid").v4;
 
-const DEBUG_JOB_ID = "0";
-
 class WebSocketConnectionStateHandler {
   constructor(clients, jobManager) {
     this.clients = clients;
@@ -33,7 +31,9 @@ class WebSocketConnectionStateHandler {
     ws.send(WebSocketMessageUtils.encodeMessage(["JOB_ID", jobId]));
     ws.send(WebSocketMessageUtils.encodeMessage(["IS_ADMIN", isFirstClient]));
 
-    if (isFirstClient || jobId !== DEBUG_JOB_ID) {
+    const isDebugJob = parsedUrl.searchParams.has("debugJob");
+
+    if (isFirstClient && !isDebugJob) {
       this.jobManager.dispatchJob(ws, jobId);
     }
   }
