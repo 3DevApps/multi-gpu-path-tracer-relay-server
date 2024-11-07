@@ -44,16 +44,20 @@ class WebSocketMessageHandler {
         }
         const filePath = path.join(__dirname, "tmp", message[1]);
         const buffer = Buffer.from(message[2].split(","), "base64");
-        fs.writeFile(filePath, buffer, (err) => {
+        fs.writeFile(filePath, buffer, async (err) => {
           if (err) {
             console.error("Error saving file:", err);
             return;
           }
 
-          jobManager.sendFile({
-            filePath,
-            fileName: message[1],
-          });
+          try {
+            await jobManager.sendFile({
+              filePath,
+              fileName: message[1],
+            });
+          } catch (err) {
+            console.error("Error sending file:", err);
+          }
 
           fs.unlink(filePath, (err) => {
             if (err) {
