@@ -13,6 +13,7 @@ class WebSocketConnectionStateHandler {
 
     const jobId = parsedUrl.searchParams.get("jobId") || uuidv4();
     ws._jobId = jobId;
+    ws._isPathTracingClient = false;
 
     if (
       parsedUrl.searchParams.has("jobId") &&
@@ -22,6 +23,7 @@ class WebSocketConnectionStateHandler {
         parsedUrl.searchParams.get("jobId"),
         ws
       );
+      ws._isPathTracingClient = true;
       return;
     }
 
