@@ -88,9 +88,7 @@ class PathTracingJobManager {
       ])
     );
 
-    if (jobObj.script) {
-      this.dispatchJob(client);
-    }
+    this.dispatchJob(client);
   }
 
   async dispatchJob(client) {
