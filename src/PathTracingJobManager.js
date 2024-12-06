@@ -3,42 +3,111 @@ const WebSocketMessageUtils = require("./WebSocketMessageUtils");
 
 const JOB_DISCONNECT_TIMEOUT = 20000;
 
+const DEFAULT_SCRIPT = `
+!#/bin/bash
+start_program() {
+    jobId=$1
+    result=$(sbatch ~/multi-gpu-path-tracer/scripts/run_job.sh $jobId)
+    internalJobId=$(echo $result | awk '{print $4}')
+    return $internalJobId
+}
+stop_program() {
+    jobId=$1
+    scancel $jobId
+}
+`;
+
 class PathTracingJobManager {
   constructor() {
-    this.ssh = new NodeSSH();
     this.jobs = new Map();
     this.jobDisconnectTimeouts = {};
-
-    this.connect({
-      host: process.env.SSH_HOST,
-      username: process.env.SSH_USERNAME,
-      password: process.env.SSH_PASSWORD,
-    });
   }
 
-  async connect({ host, username, ...credentials }) {
+  registerJob(jobId) {
+    if (!this.jobs.has(jobId)) {
+      this.jobs.set(jobId, {});
+      return true;
+    }
+    return JSON.stringify(this.jobs.get(jobId)) === "{}";
+  }
+
+  async initializeConnection(client, connectionDetails) {
+    const jobId = client._jobId;
+    const jobObj = this.jobs.get(jobId);
+    if (Object.keys(jobObj).length !== 0) {
+      return;
+    }
+
+    const ssh = new NodeSSH();
     try {
-      await this.ssh.connect({
-        host,
-        username,
-        ...credentials,
-      });
+      if (connectionDetails.default) {
+        await ssh.connect({
+          host: process.env.SSH_HOST,
+          username: process.env.SSH_USERNAME,
+          password: process.env.SSH_PASSWORD,
+        });
+      } else {
+        if (connectionDetails.authenticationMethod === "sshKey") {
+          await ssh.connect({
+            host: connectionDetails.host,
+            username: connectionDetails.username,
+            privateKey: connectionDetails.credential,
+          });
+        } else {
+          await ssh.connect({
+            host: connectionDetails.host,
+            username: connectionDetails.username,
+            password: connectionDetails.credential,
+          });
+        }
+      }
     } catch (err) {
-      throw err;
+      client.send(
+        WebSocketMessageUtils.encodeMessage([
+          "NOTIFICATION",
+          "ERROR",
+          "CONNECTION_ERROR",
+          "Connection failed",
+        ])
+      );
+      return;
+    }
+
+    this.jobs.set(jobId, {
+      ssh,
+      script: connectionDetails.default
+        ? DEFAULT_SCRIPT
+        : connectionDetails.script,
+    });
+
+    client._shouldConfigureJob = false;
+    client.send(
+      WebSocketMessageUtils.encodeMessage([
+        "CONNECTION_DETAILS_OK",
+        "Connection established",
+      ])
+    );
+
+    if (jobObj.script) {
+      this.dispatchJob(client);
     }
   }
 
-  async dispatchJob(client, jobId) {
+  async dispatchJob(client) {
+    const jobId = client._jobId;
     if (this.jobDisconnectTimeouts[jobId]) {
       clearTimeout(this.jobDisconnectTimeouts[jobId]);
       delete this.jobDisconnectTimeouts[jobId];
       return;
     }
-    const result = await this.ssh.execCommand(
-      `sbatch ~/multi-gpu-path-tracer/scripts/run_job.sh ${jobId}`
+    const jobObj = this.jobs.get(jobId);
+    const result = await jobObj?.ssh?.execCommand(
+      `${jobObj.script}
+      start_program ${jobId}`
     );
-    const sbatchId = result.stdout.split(" ")[3];
-    this.jobs.set(jobId, sbatchId);
+    const internalJobId = result.stdout;
+    this.jobs.set(jobId, { ...jobObj, internalJobId });
+
     client.send(
       WebSocketMessageUtils.encodeMessage([
         "NOTIFICATION",
@@ -54,24 +123,18 @@ class PathTracingJobManager {
       return;
     }
     this.jobDisconnectTimeouts[jobId] = setTimeout(() => {
-      this.ssh.execCommand(`scancel ${this.jobs.get(jobId)}`);
+      const jobObj = this.jobs.get(jobId);
+      jobObj?.ssh?.execCommand(`
+        ${jobObj.script}
+        stop_program ${jobObj.internalJobId}`);
       this.jobs.delete(jobId);
       delete this.jobDisconnectTimeouts[jobId];
     }, JOB_DISCONNECT_TIMEOUT);
   }
 
-  async getJobStatus(jobId) {
-    if (!this.jobs.has(jobId)) {
-      return "NOT_FOUND";
-    }
-    const result = await this.ssh.execCommand(
-      `hpc-jobs | grep ${this.jobs.get(jobId)} | awk '{ print $4 }'`
-    );
-    return result.stdout.trim();
-  }
-
-  async sendFile(filePath, fileName) {
-    await this.ssh.putFiles([
+  async sendFile(jobId, filePath, fileName) {
+    const jobObj = this.jobs.get(jobId);
+    await jobObj?.ssh?.putFiles([
       {
         local: filePath,
         remote: `files/f${fileName}`,

@@ -30,13 +30,14 @@ class WebSocketConnectionStateHandler {
     this.clients.addClientToJob(jobId, ws);
     const isFirstClient = this.clients.isAdmin(jobId, ws);
 
-    ws.send(WebSocketMessageUtils.encodeMessage(["JOB_ID", jobId]));
-    ws.send(WebSocketMessageUtils.encodeMessage(["IS_ADMIN", isFirstClient]));
+    ws.send(WebSocketMessageUtils.encodeMessage(["CONFIG", jobId, isFirstClient]));
 
     const isDebugJob = parsedUrl.searchParams.has("debugJob");
 
-    if (isFirstClient && !isDebugJob) {
-      this.jobManager.dispatchJob(ws, jobId);
+    ws._shouldConfigureJob = false;
+    if (this.jobManager.registerJob(jobId) && isFirstClient && !isDebugJob) {
+      ws._shouldConfigureJob = true;
+      ws.send(WebSocketMessageUtils.encodeMessage(["GET_CONNECTION_DETAILS"]));
     }
   }
 

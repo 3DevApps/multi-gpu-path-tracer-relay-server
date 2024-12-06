@@ -16,6 +16,17 @@ class WebSocketMessageHandler {
     }
 
     if (this.clients.isAdmin(jobId, ws)) {
+      if (
+        ws._shouldConfigureJob &&
+        rawMessage.toString().startsWith("CLIENT_MESSAGE#CONNECTION_DETAILS")
+      ) {
+        const parsedMessage = rawMessage.toString().split("#");
+        const connectionDetails = JSON.parse(
+          decodeURIComponent(parsedMessage[2])
+        );
+        this.jobManager.initializeConnection(ws, connectionDetails);
+        return;
+      }
       this.clients
         .getPathTracingClients(jobId)
         ?.forEach((client) => client.send(rawMessage));
