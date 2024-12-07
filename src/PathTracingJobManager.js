@@ -132,12 +132,16 @@ class PathTracingJobManager {
 
   async sendFile(jobId, filePath, fileName) {
     const jobObj = this.jobs.get(jobId);
-    await jobObj?.ssh?.putFiles([
-      {
-        local: filePath,
-        remote: `files/f${fileName}`,
-      },
-    ]);
+    try {
+      await jobObj?.ssh?.putFiles([
+        {
+          local: filePath,
+          remote: `files/f${fileName}`,
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
   }
 }
 

@@ -85,7 +85,7 @@ app.post("/upload", upload.any(), validateFiles, async (req, res) => {
     }
 
     // Send file to job manager
-    await jobManager.sendFile(outputPath, `${jobId}.glb`);
+    await jobManager.sendFile(jobId, outputPath, `${jobId}.glb`);
 
     res.status(200).json({
       success: true,
