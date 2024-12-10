@@ -73,11 +73,25 @@ class PathTracingJobManager {
       return;
     }
 
+    // Read script in the remote server
+    let result;
+    try {
+      result = await ssh.execCommand("cat ~/connectionScript.sh");
+    } catch (err) {
+      client.send(
+        WebSocketMessageUtils.encodeMessage([
+          "NOTIFICATION",
+          "ERROR",
+          "SCRIPT_ERROR",
+          "Failed to read script",
+        ])
+      );
+      return;
+    }
+
     this.jobs.set(jobId, {
       ssh,
-      script: connectionDetails.default
-        ? DEFAULT_SCRIPT
-        : connectionDetails.script,
+      script: connectionDetails.default ? DEFAULT_SCRIPT : result,
     });
 
     client._shouldConfigureJob = false;
